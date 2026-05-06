@@ -1,0 +1,25 @@
+import asyncio
+import httpx
+
+BASE_URL = "http://127.0.0.1:8000"
+
+async def main():
+    async with httpx.AsyncClient(timeout=120) as client:
+        # 登入
+        res = await client.post(f"{BASE_URL}/auth/login", json={"username": "admin", "password": "1234"})
+        token = res.json()["token"]
+        headers = {"Authorization": f"Bearer {token}"}
+        print(f"登入成功")
+
+        # 觸發爬蟲
+        res = await client.post(f"{BASE_URL}/crawl/1", headers=headers)
+        print(f"爬蟲: {res.json()}")
+
+        # 看圖片
+        res = await client.get(f"{BASE_URL}/images/", headers=headers)
+        images = res.json()
+        print(f"圖片數量: {len(images)}")
+        for img in images[:3]:
+            print(f"  - {img['original_url']}")
+
+asyncio.run(main())
