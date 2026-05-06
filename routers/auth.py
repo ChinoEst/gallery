@@ -1,24 +1,29 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from passlib.context import CryptContext
 from jose import jwt
 from datetime import datetime, timedelta
 from database import get_db
 from models import User
 from schemas import UserRegister, UserLogin, TokenResponse
+import bcrypt
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+
+security = HTTPBearer()
+
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
 SECRET_KEY = "your_secret_key"
 ALGORITHM = "HS256"
 
+
 def hash_password(password: str):
-    return pwd_context.hash(password)
+    return bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
 
 def verify_password(plain: str, hashed: str):
-    return pwd_context.verify(plain, hashed)
+    return bcrypt.checkpw(plain.encode(), hashed.encode())
 
 def create_token(username: str, role: str):
     expire = datetime.utcnow() + timedelta(hours=24)
@@ -44,3 +49,11 @@ async def login(body: UserLogin, db: AsyncSession = Depends(get_db)):
         raise HTTPException(status_code=401, detail="帳號或密碼錯誤")
     token = create_token(user.username, user.role)
     return {"token": token}
+
+
+def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    try:
+        payload = jwt.decode(credentials.credentials, SECRET_KEY, algorithms=[ALGORITHM])
+        return payload
+    except:
+        raise HTTPException(status_code=401, detail="Token 無效")
