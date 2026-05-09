@@ -44,7 +44,7 @@ def create_token(username: str, role: str):
 #register new account
 #router: router = APIRouter(prefix="/auth", tags=["auth"])
 #path: auth/register  <-call this,   not def register
-#response_model: restrict output format
+#return format: TokenResponse
 @router.post("/register", response_model=TokenResponse)
 async def register(body: UserRegister, db: AsyncSession = Depends(get_db)):
     #check whether user exist by SQL
@@ -63,7 +63,9 @@ async def register(body: UserRegister, db: AsyncSession = Depends(get_db)):
     token = create_token(user.username, user.role)
     return {"token": token}
 
-
+#path:auth/login
+#type:post(add)
+#return format: TokenResponse
 @router.post("/login", response_model=TokenResponse)
 async def login(body: UserLogin, db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(User).where(User.username == body.username))

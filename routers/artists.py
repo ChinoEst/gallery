@@ -12,6 +12,7 @@ router = APIRouter(prefix="/artists", tags=["artists"])
 
 #path: artists
 #method: get
+#return format: list[ArtistResponse]
 @router.get("/", response_model=list[ArtistResponse])
 async def get_artists(payload=Depends(verify_token), db: AsyncSession = Depends(get_db)):
 
@@ -24,6 +25,7 @@ async def get_artists(payload=Depends(verify_token), db: AsyncSession = Depends(
 
 #path: artists
 #method: post(add)
+#return format: ArtistResponse
 @router.post("/", response_model=ArtistResponse)
 async def add_artist(body: ArtistCreate, payload=Depends(verify_token), db: AsyncSession = Depends(get_db)):
 
@@ -49,6 +51,9 @@ async def add_artist(body: ArtistCreate, payload=Depends(verify_token), db: Asyn
 
     return artist
 
+
+#path: artists/{artist_id}
+#type: delete
 @router.delete("/{artist_id}")
 async def delete_artist(artist_id: int, payload=Depends(verify_token), db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(Artist).where(Artist.id == artist_id))

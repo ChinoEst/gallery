@@ -26,12 +26,16 @@ AsyncSessionLocal = sessionmaker(
     expire_on_commit=False
 )
 
+
 class Base(DeclarativeBase):
     pass
 
+
+#get session
 async def get_db():
     async with AsyncSessionLocal() as session:
         yield session
+
 
 #activate engine
 #init all component in model
