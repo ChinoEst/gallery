@@ -43,7 +43,7 @@ def create_token(username: str, role: str):
 
 #register new account
 #router: router = APIRouter(prefix="/auth", tags=["auth"])
-#real path: routers/auth/register  <-call this,   not def register
+#path: auth/register  <-call this,   not def register
 #response_model: restrict output format
 @router.post("/register", response_model=TokenResponse)
 async def register(body: UserRegister, db: AsyncSession = Depends(get_db)):
