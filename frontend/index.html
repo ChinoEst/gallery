@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>圖庫系統</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: sans-serif; background: #1a1a1a; color: #fff; height: 100vh; }
+
+        /* 登入頁 */
+        #login-page {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        .login-box {
+            background: #2a2a2a;
+            padding: 40px;
+            border-radius: 12px;
+            width: 320px;
+        }
+        .login-box h2 { margin-bottom: 24px; text-align: center; }
+        .login-box input {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 16px;
+            background: #3a3a3a;
+            border: none;
+            border-radius: 6px;
+            color: #fff;
+            font-size: 14px;
+        }
+        .login-box button {
+            width: 100%;
+            padding: 10px;
+            background: #4a9eff;
+            border: none;
+            border-radius: 6px;
+            color: #fff;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        .login-box button:hover { background: #3a8eef; }
+
+        /* 主頁面 */
+        #main-page { display: none; height: 100vh; flex-direction: column; }
+
+        /* 頂部 */
+        .topbar {
+            background: #2a2a2a;
+            padding: 12px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        /* 主體 */
+        .content { display: flex; flex: 1; overflow: hidden; }
+
+        /* 左側創作者清單 */
+        .sidebar {
+            width: 200px;
+            background: #2a2a2a;
+            padding: 16px;
+            overflow-y: auto;
+        }
+        .sidebar h3 { margin-bottom: 12px; font-size: 14px; color: #aaa; }
+        .artist-item {
+            padding: 8px 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-bottom: 4px;
+        }
+        .artist-item:hover { background: #3a3a3a; }
+        .artist-item.active { background: #4a9eff; }
+
+        /* 右側圖片牆 */
+        .gallery {
+            flex: 1;
+            padding: 16px;
+            overflow-y: auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 12px;
+            align-content: start;
+        }
+
+        .image-card img {
+            width: 100%;
+            height: auto;
+            display: block;
+        }.image-card.selected { outline: 3px solid #4a9eff; }
+
+        /* 底部工具列 */
+        .bottombar {
+            background: #2a2a2a;
+            padding: 12px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .bottombar button {
+            padding: 8px 20px;
+            background: #4a9eff;
+            border: none;
+            border-radius: 6px;
+            color: #fff;
+            cursor: pointer;
+        }
+        .bottombar button:hover { background: #3a8eef; }
+    </style>
+</head>
+<body>
+
+<!-- 登入頁 -->
+<div id="login-page">
+    <div class="login-box">
+        <h2>圖庫系統</h2>
+        <input type="text" id="username" placeholder="帳號">
+        <input type="password" id="password" placeholder="密碼">
+        <button onclick="login()">登入</button>
+    </div>
+</div>
+
+<!-- 主頁面 -->
+<div id="main-page">
+    <div class="topbar">
+        <span>圖庫系統</span>
+        <div style="display:flex; gap:8px;">
+            <input type="text" id="search-tag" placeholder="搜尋 tag..." 
+                style="padding:6px 10px; background:#3a3a3a; border:none; border-radius:6px; color:#fff;">
+            <button onclick="searchImages()" 
+                    style="padding:6px 12px; background:#4a9eff; border:none; border-radius:6px; color:#fff; cursor:pointer;">搜尋</button>
+            <button onclick="loadImages()" 
+                    style="padding:6px 12px; background:#555; border:none; border-radius:6px; color:#fff; cursor:pointer;">重置</button>
+        </div>
+        <span id="user-info"></span>
+    </div>
+    <div class="content">
+        <div class="sidebar">
+            <h3>創作者</h3>
+            <div id="artist-list"></div>
+            <hr style="border-color:#444; margin: 12px 0;">
+            <button onclick="toggleAddArtist()" 
+                    style="width:100%; padding:8px; background:#4a9eff; border:none; border-radius:6px; color:#fff; cursor:pointer;">
+                + 新增創作者
+            </button>
+            <div id="add-artist-form" style="display:none; margin-top:12px;">
+                <input type="text" id="artist-name" placeholder="名稱" 
+                    style="width:100%; padding:6px; margin-bottom:6px; background:#3a3a3a; border:none; border-radius:6px; color:#fff;">
+                <input type="text" id="artist-url" placeholder="ArtStation URL" 
+                    style="width:100%; padding:6px; margin-bottom:6px; background:#3a3a3a; border:none; border-radius:6px; color:#fff;">
+                <input type="text" id="artist-platform" placeholder="平台" value="artstation"
+                    style="width:100%; padding:6px; margin-bottom:6px; background:#3a3a3a; border:none; border-radius:6px; color:#fff;">
+                <button onclick="addArtist()" 
+                        style="width:100%; padding:8px; background:#4a9eff; border:none; border-radius:6px; color:#fff; cursor:pointer;">
+                    新增
+                </button>
+            </div>
+        </div>
+        <div class="gallery" id="gallery"></div>
+    </div>
+    <div class="bottombar">
+        <span id="selected-count">已選取 0 張</span>
+        <button onclick="downloadSelected()">下載選取</button>
+    </div>
+</div>
+
+<script>
+const API = "http://127.0.0.1:8000";
+let token = "";
+let selectedIds = new Set();
+let currentArtistId = null;
+
+async function login() {
+    const username = document.getElementById("username").value;
+    const password = document.getElementById("password").value;
+    const res = await fetch(`${API}/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password })
+    });
+    const data = await res.json();
+    if (data.token) {
+        token = data.token;
+        document.getElementById("login-page").style.display = "none";
+        document.getElementById("main-page").style.display = "flex";
+        document.getElementById("user-info").textContent = username;
+        loadArtists();
+        loadImages();
+    } else {
+        alert("帳號或密碼錯誤");
+    }
+}
+
+async function loadArtists() {
+    const res = await fetch(`${API}/artists/`, {
+        headers: { "Authorization": `Bearer ${token}` }
+    });
+    const artists = await res.json();
+    const list = document.getElementById("artist-list");
+    list.innerHTML = `<div class="artist-item active" onclick="filterArtist(null, this)">全部</div>`;
+    artists.forEach(a => {
+        list.innerHTML += `<div class="artist-item" onclick="filterArtist(${a.id}, this)">${a.name}</div>`;
+    });
+}
+
+async function loadImages(artistId = null) {
+    let url = `${API}/images/`;
+    if (artistId) url += `?artist_id=${artistId}`;
+    const res = await fetch(url, {
+        headers: { "Authorization": `Bearer ${token}` }
+    });
+    const images = await res.json();
+    const gallery = document.getElementById("gallery");
+    gallery.innerHTML = "";
+    images.forEach(img => {
+        const card = document.createElement("div");
+        card.className = "image-card";
+        card.dataset.id = img.id;
+        card.innerHTML = `
+            <input type="checkbox" class="checkbox" onchange="toggleSelect(${img.id}, this)">
+            <img src="${img.thumbnail_url || img.original_url}" 
+                 onerror="this.src=''"
+                 loading="lazy">
+        `;
+        gallery.appendChild(card);
+    });
+}
+
+function filterArtist(artistId, el) {
+    document.querySelectorAll(".artist-item").forEach(e => e.classList.remove("active"));
+    el.classList.add("active");
+    currentArtistId = artistId;
+    selectedIds.clear();
+    updateCount();
+    loadImages(artistId);
+}
+
+function toggleSelect(id, checkbox) {
+    const card = checkbox.closest(".image-card");
+    if (checkbox.checked) {
+        selectedIds.add(id);
+        card.classList.add("selected");
+    } else {
+        selectedIds.delete(id);
+        card.classList.remove("selected");
+    }
+    updateCount();
+}
+
+function updateCount() {
+    document.getElementById("selected-count").textContent = `已選取 ${selectedIds.size} 張`;
+}
+
+async function downloadSelected() {
+    if (selectedIds.size === 0) {
+        alert("請先勾選圖片");
+        return;
+    }
+    const res = await fetch(`${API}/images/download`, {
+        method: "POST",
+        headers: {
+            "Authorization": `Bearer ${token}`,
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ image_ids: [...selectedIds] })
+    });
+    const data = await res.json();
+    alert(data.message);
+}
+
+async function searchImages() {
+    const tag = document.getElementById("search-tag").value.trim();
+    if (!tag) return;
+    
+    let url = `${API}/images/search?tag=${encodeURIComponent(tag)}`;
+    if (currentArtistId) url += `&artist_id=${currentArtistId}`;
+    
+    const res = await fetch(url, {
+        headers: { "Authorization": `Bearer ${token}` }
+    });
+    const images = await res.json();
+    
+    const gallery = document.getElementById("gallery");
+    gallery.innerHTML = "";
+    images.forEach(img => {
+        const card = document.createElement("div");
+        card.className = "image-card";
+        card.dataset.id = img.id;
+        card.innerHTML = `
+            <input type="checkbox" class="checkbox" onchange="toggleSelect(${img.id}, this)">
+            <img src="${img.thumbnail_url || img.original_url}" 
+                 onerror="this.src=''"
+                 loading="lazy">
+        `;
+        gallery.appendChild(card);
+    });
+}
+
+function toggleAddArtist() {
+    const form = document.getElementById("add-artist-form");
+    form.style.display = form.style.display === "none" ? "block" : "none";
+}
+
+async function addArtist() {
+    const name = document.getElementById("artist-name").value.trim();
+    const url = document.getElementById("artist-url").value.trim();
+    const platform = document.getElementById("artist-platform").value.trim();
+    
+    if (!name || !url) {
+        alert("請填寫名稱和 URL");
+        return;
+    }
+    
+    const res = await fetch(`${API}/artists/`, {
+        method: "POST",
+        headers: {
+            "Authorization": `Bearer ${token}`,
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ name, url, platform })
+    });
+    
+    const data = await res.json();
+
+    if (res.ok) {
+        const artistId = data.id;
+        alert(`新增 ${data.name} 成功，開始爬取圖片...`);
+        
+        // 觸發爬蟲
+        await fetch(`${API}/crawl/${artistId}`, {
+            method: "POST",
+            headers: { "Authorization": `Bearer ${token}` }
+        });
+        
+        alert("爬取完成！");
+        document.getElementById("add-artist-form").style.display = "none";
+        document.getElementById("artist-name").value = "";
+        document.getElementById("artist-url").value = "";
+        loadArtists();
+        loadImages();
+    }
+    else {
+        alert(data.detail || "新增失敗");
+    }
+}
+
+
+</script>
+</body>
+</html>

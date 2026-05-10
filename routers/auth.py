@@ -63,6 +63,8 @@ async def register(body: UserRegister, db: AsyncSession = Depends(get_db)):
     token = create_token(user.username, user.role)
     return {"token": token}
 
+
+
 #path:auth/login
 #type:post(add)
 #return format: TokenResponse

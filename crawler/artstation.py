@@ -15,7 +15,8 @@ async def get_or_create_tag(db: DBSession, tag_name: str) -> Tag:
         await db.flush()
     return tag
 
-async def crawl_project(client, hash_id: str, artist: Artist, db: DBSession):
+
+async def crawl_project(client, hash_id: str, artist: Artist, db: AsyncSession):
     async with CRAWL_SEMAPHORE:
         try:
             #get url from site for database
@@ -24,42 +25,43 @@ async def crawl_project(client, hash_id: str, artist: Artist, db: DBSession):
 
             #access all tag with all images from  artist
             tags = [c["name"] for c in data.get("categories", [])]
-
-            #cover as Thumbnail
             cover_url = data.get("cover_url")
 
+            # access th first
+            first_image = None
             for asset in data.get("assets", []):
-                if not asset.get("has_image"):
-                    continue
-                
-                image_url = asset.get("image_url")
+                if asset.get("has_image"):
+                    first_image = asset.get("image_url")
+                    break
 
-                result = await db.execute(select(Image).where(Image.original_url == image_url))
-                if result.scalar_one_or_none():
-                    continue
-                    
-                image = Image(
-                    artist_id=artist.id,
-                    original_url=image_url,
-                    thumbnail_url=cover_url,
-                )
+            if not first_image:
+                return
 
-                
-                db.add(image)
-                """
-                   add   -> flush -> commit -> refresh
-                register    send     updata     sync
-                
+            # 檢查是否已存在
+            result = await db.execute(select(Image).where(Image.original_url == first_image))
+            if result.scalar_one_or_none():
+                return
 
-                flush  vs refresh
-                
+            image = Image(
+                artist_id=artist.id,
+                original_url=first_image,
+                thumbnail_url=cover_url,
+            )
+            db.add(image)
+            """
+                add   -> flush -> commit -> refresh
+            register    send     updata     sync
+            
 
-                """
-                await db.flush()
+            flush: getimage.id before updata
 
-                for tag_name in tags:
-                    tag = await get_or_create_tag(db, tag_name)
-                    db.add(ImageTag(image_id=image.id, tag_id=tag.id))
+
+            """
+            await db.flush()
+
+            for tag_name in tags:
+                tag = await get_or_create_tag(db, tag_name)
+                db.add(ImageTag(image_id=image.id, tag_id=tag.id))
 
             await db.commit()
 
@@ -67,6 +69,8 @@ async def crawl_project(client, hash_id: str, artist: Artist, db: DBSession):
             #restore all changes if crawl failed
             await db.rollback()
             print(f"爬取失敗 hash_id={hash_id}: {e}")
+
+
 
 async def crawl_artstation(artist: Artist, db: AsyncSession):##
     username = artist.url.rstrip("/").split("/")[-1]

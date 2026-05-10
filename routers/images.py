@@ -3,12 +3,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 from database import get_db
-from models import Image
+from models import Image, Tag
 from schemas import ImageResponse, DownloadRequest
 from routers.auth import verify_token
 import aiofiles
 import httpx
 import asyncio
+import os
 
 #define
 router = APIRouter(prefix="/images", tags=["images"])
@@ -16,6 +17,30 @@ router = APIRouter(prefix="/images", tags=["images"])
 # Semaphore restrict max download number
 DOWNLOAD_SEMAPHORE = asyncio.Semaphore(5)
 
+
+#path: images/search
+#type: get
+#return format: list[ImageResponse]
+@router.get("/search", response_model=list[ImageResponse])
+async def search_images(
+    tag: str = None,
+    artist_id: int = None,
+    payload=Depends(verify_token),
+    db: AsyncSession = Depends(get_db)
+    ):
+    #all image
+    query = select(Image).options(selectinload(Image.tags))
+    
+    #condition: artist_id = ?
+    if artist_id:
+        query = query.where(Image.artist_id == artist_id)
+    
+    #condition:tag = ?
+    if tag:
+        query = query.join(Image.tags).where(Tag.name == tag)
+    
+    result = await db.execute(query)
+    return result.scalars().all()
 
 
 
@@ -79,7 +104,10 @@ async def download_one(image: Image, db: AsyncSession):
             async with httpx.AsyncClient() as client:
                 response = await client.get(image.original_url)
                 filename = f"{image.id}.jpg"
+                if not os.path.exists("uploads"):
+                    os.mkdir("uploads")
                 filepath = f"uploads/{filename}"
+
                 async with aiofiles.open(filepath, "wb") as f:
                     await f.write(response.content)
                 image.filename = filename
@@ -103,3 +131,5 @@ async def download_images(body: DownloadRequest, payload=Depends(verify_token), 
     #do multiple downloan at the same time, by "crazy" switch
     await asyncio.gather(*[download_one(image, db) for image in images])
     return {"message": f"下載完成，共 {len(images)} 張"}
+
+
