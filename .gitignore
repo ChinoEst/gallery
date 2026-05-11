@@ -16,3 +16,7 @@ uploads/
 # IDE
 .vscode/
 .idea/
+
+# Docker
+.dockerenv
+docker-compose.override.yml

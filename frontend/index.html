@@ -8,13 +8,15 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: sans-serif; background: #1a1a1a; color: #fff; height: 100vh; }
 
-        /* 登入頁 */
+        /* 登入頁
+        #: all id = login-page */
         #login-page {
             display: flex;
             justify-content: center;
             align-items: center;
             height: 100vh;
         }
+        /* .: all class = login-box*/
         .login-box {
             background: #2a2a2a;
             padding: 40px;
@@ -170,24 +172,36 @@
 </div>
 
 <script>
+//const: never change, but could change value in object 
+//let: could change 
 const API = "http://127.0.0.1:8000";
 let token = "";
 let selectedIds = new Set();
 let currentArtistId = null;
 
+
+
 async function login() {
     const username = document.getElementById("username").value;
     const password = document.getElementById("password").value;
+    //fetch in js = client.post in py
     const res = await fetch(`${API}/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, password })
     });
+    //res.json: .json->object
     const data = await res.json();
     if (data.token) {
         token = data.token;
+        //display none : hide login page
+        //id = login-page
         document.getElementById("login-page").style.display = "none";
+        //show main page by flex
+        //id = main-page
         document.getElementById("main-page").style.display = "flex";
+        //display username
+        //id = user-info
         document.getElementById("user-info").textContent = username;
         loadArtists();
         loadImages();
@@ -201,7 +215,13 @@ async function loadArtists() {
         headers: { "Authorization": `Bearer ${token}` }
     });
     const artists = await res.json();
+    //<div id="artist-list"></div>
     const list = document.getElementById("artist-list");
+    /*
+    add new button 全部
+    use set: class = artist-item and class = active
+    funct: filterArtist(null, this)
+    */
     list.innerHTML = `<div class="artist-item active" onclick="filterArtist(null, this)">全部</div>`;
     artists.forEach(a => {
         list.innerHTML += `<div class="artist-item" onclick="filterArtist(${a.id}, this)">${a.name}</div>`;
@@ -218,30 +238,53 @@ async function loadImages(artistId = null) {
     const gallery = document.getElementById("gallery");
     gallery.innerHTML = "";
     images.forEach(img => {
+        //build <div>
         const card = document.createElement("div");
+
+        //add class = image-card
+        // <div> -> <div class= image-card>
         card.className = "image-card";
+        //add data-id = img.id
+        // <div class= image-card> -> <div class= image-card data-id = img.id>
         card.dataset.id = img.id;
+        //checkbox = ☑️, when ☑️ do toggleSelect
         card.innerHTML = `
             <input type="checkbox" class="checkbox" onchange="toggleSelect(${img.id}, this)">
             <img src="${img.thumbnail_url || img.original_url}" 
                  onerror="this.src=''"
                  loading="lazy">
         `;
+        //like list.append()
         gallery.appendChild(card);
     });
 }
 
+
+//only support solo select
 function filterArtist(artistId, el) {
+    //find all class = artist-itemm, remove active
     document.querySelectorAll(".artist-item").forEach(e => e.classList.remove("active"));
+
     el.classList.add("active");
     currentArtistId = artistId;
+    //clear all image has been loading
     selectedIds.clear();
     updateCount();
+    //reloading image with artistId
     loadImages(artistId);
 }
 
+
 function toggleSelect(id, checkbox) {
     const card = checkbox.closest(".image-card");
+    /* 
+    closet:findup class = image-card
+    ex:
+    <div class="image-card">        <- find this
+        <input type="checkbox">     <- from here     
+        <img src="...">
+    </div>
+    */
     if (checkbox.checked) {
         selectedIds.add(id);
         card.classList.add("selected");
@@ -252,9 +295,11 @@ function toggleSelect(id, checkbox) {
     updateCount();
 }
 
+
 function updateCount() {
     document.getElementById("selected-count").textContent = `已選取 ${selectedIds.size} 張`;
 }
+
 
 async function downloadSelected() {
     if (selectedIds.size === 0) {
@@ -267,17 +312,26 @@ async function downloadSelected() {
             "Authorization": `Bearer ${token}`,
             "Content-Type": "application/json"
         },
+        //js object -> json
+        //[...selectedIds]: set to list
+        //...list in js = *list in py
         body: JSON.stringify({ image_ids: [...selectedIds] })
     });
     const data = await res.json();
     alert(data.message);
 }
 
+
 async function searchImages() {
+    //trim() remove space
     const tag = document.getElementById("search-tag").value.trim();
     if (!tag) return;
     
+    //call images/search in back
     let url = `${API}/images/search?tag=${encodeURIComponent(tag)}`;
+    /*
+    tag may contain chinese or others transfer it to safe word avoid error
+    */
     if (currentArtistId) url += `&artist_id=${currentArtistId}`;
     
     const res = await fetch(url, {
@@ -285,6 +339,8 @@ async function searchImages() {
     });
     const images = await res.json();
     
+
+
     const gallery = document.getElementById("gallery");
     gallery.innerHTML = "";
     images.forEach(img => {
@@ -294,7 +350,7 @@ async function searchImages() {
         card.innerHTML = `
             <input type="checkbox" class="checkbox" onchange="toggleSelect(${img.id}, this)">
             <img src="${img.thumbnail_url || img.original_url}" 
-                 onerror="this.src=''"
+                 onerror="this.src=''"  //when loading fail, space it
                  loading="lazy">
         `;
         gallery.appendChild(card);
