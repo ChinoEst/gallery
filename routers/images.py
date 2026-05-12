@@ -6,10 +6,13 @@ from database import get_db
 from models import Image, Tag
 from schemas import ImageResponse, DownloadRequest
 from routers.auth import verify_token
+from cache import get_cache, set_cache
 import aiofiles
 import httpx
 import asyncio
 import os
+
+
 
 #define
 router = APIRouter(prefix="/images", tags=["images"])
@@ -49,6 +52,7 @@ async def search_images(
 #return format: list[ImageResponse]
 @router.get("/", response_model=list[ImageResponse])
 async def get_images(payload=Depends(verify_token), db: AsyncSession = Depends(get_db)):
+    
     result = await db.execute(
         select(Image).options(selectinload(Image.tags))
     )
@@ -113,14 +117,23 @@ async def download_images(body: DownloadRequest, payload=Depends(verify_token), 
 #note: /{} at bottom of others or it would cover others  @router.post("/???"")
 @router.get("/{image_id}", response_model=ImageResponse)
 async def get_image(image_id: int, payload=Depends(verify_token), db: AsyncSession = Depends(get_db)):
+    cache_key = f"image:{image_id}"
+    cached = get_cache(cache_key)
+    if cached:
+        print(f"快取命中: {cache_key}")
+        return cached
+
     result = await db.execute(
         select(Image).where(Image.id == image_id).options(selectinload(Image.tags))
     )
     image = result.scalar_one_or_none()
     if not image:
         raise HTTPException(status_code=404, detail="找不到此圖片")
-    return image
 
+    image_data = ImageResponse.model_validate(image).model_dump(mode="json")
+    set_cache(cache_key, image_data, expire=300)
+
+    return image
 
 
 
