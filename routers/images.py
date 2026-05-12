@@ -68,32 +68,6 @@ async def get_images(payload=Depends(verify_token), db: AsyncSession = Depends(g
 
 
 
-#path: images/{image_id}
-#type: get
-#return format: ImageResponse
-@router.get("/{image_id}", response_model=ImageResponse)
-async def get_image(image_id: int, payload=Depends(verify_token), db: AsyncSession = Depends(get_db)):
-    result = await db.execute(
-        select(Image).where(Image.id == image_id).options(selectinload(Image.tags))
-    )
-    image = result.scalar_one_or_none()
-    if not image:
-        raise HTTPException(status_code=404, detail="找不到此圖片")
-    return image
-
-
-#path: images/{image_id}
-#type: delete
-@router.delete("/{image_id}")
-async def delete_image(image_id: int, payload=Depends(verify_token), db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(Image).where(Image.id == image_id))
-    image = result.scalar_one_or_none()
-    if not image:
-        raise HTTPException(status_code=404, detail="找不到此圖片")
-    await db.delete(image)
-    await db.commit()
-    return {"message": "刪除成功"}
-
 
 
 async def download_one(image: Image, db: AsyncSession):
@@ -133,3 +107,32 @@ async def download_images(body: DownloadRequest, payload=Depends(verify_token), 
     return {"message": f"下載完成，共 {len(images)} 張"}
 
 
+#path: images/{image_id}
+#type: get
+#return format: ImageResponse
+#note: /{} at bottom of others or it would cover others  @router.post("/???"")
+@router.get("/{image_id}", response_model=ImageResponse)
+async def get_image(image_id: int, payload=Depends(verify_token), db: AsyncSession = Depends(get_db)):
+    result = await db.execute(
+        select(Image).where(Image.id == image_id).options(selectinload(Image.tags))
+    )
+    image = result.scalar_one_or_none()
+    if not image:
+        raise HTTPException(status_code=404, detail="找不到此圖片")
+    return image
+
+
+
+
+#path: images/{image_id}
+#type: delete
+#note: /{} at bottom of others or it would cover others  @router.post("/???"")
+@router.delete("/{image_id}")
+async def delete_image(image_id: int, payload=Depends(verify_token), db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(Image).where(Image.id == image_id))
+    image = result.scalar_one_or_none()
+    if not image:
+        raise HTTPException(status_code=404, detail="找不到此圖片")
+    await db.delete(image)
+    await db.commit()
+    return {"message": "刪除成功"}

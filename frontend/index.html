@@ -357,10 +357,15 @@ async function searchImages() {
     });
 }
 
+
 function toggleAddArtist() {
     const form = document.getElementById("add-artist-form");
     form.style.display = form.style.display === "none" ? "block" : "none";
+    /*
+    form.style.display = "block" if form.style.display == "none" else "none"
+    */
 }
+
 
 async function addArtist() {
     const name = document.getElementById("artist-name").value.trim();
