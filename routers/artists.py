@@ -5,6 +5,7 @@ from database import get_db
 from models import Artist
 from schemas import ArtistCreate, ArtistResponse
 from routers.auth import verify_token
+import logging
 
 #define
 router = APIRouter(prefix="/artists", tags=["artists"])
@@ -17,9 +18,11 @@ router = APIRouter(prefix="/artists", tags=["artists"])
 async def get_artists(payload=Depends(verify_token), db: AsyncSession = Depends(get_db)):
 
     #search by SQL
+    logging.info("[INFO] fetching artists from database...")
     result = await db.execute(select(Artist))
 
     #take all data
+    logging.info("[INFO] Successful!")
     return result.scalars().all()
 
 
@@ -30,16 +33,20 @@ async def get_artists(payload=Depends(verify_token), db: AsyncSession = Depends(
 async def add_artist(body: ArtistCreate, payload=Depends(verify_token), db: AsyncSession = Depends(get_db)):
 
     #search by SQL
+    logging.info("[INFO] checking whether artist exists...")
     result = await db.execute(select(Artist).where(Artist.url == body.url))
     if result.scalar_one_or_none():
+        logging.warning("[WARNING] artist already exists")
         raise HTTPException(status_code=400, detail="此創作者已存在")
     
     #add new object(artist)
     artist = Artist(name=body.name, url=body.url, platform=body.platform)
+    logging.info(f"[INFO] artist {artist.name} created successfully!")
     db.add(artist)
     await db.commit()
+    logging.info(f"[INFO] artist {artist.name} add to database successfully!")
     await db.refresh(artist)
-
+    logging.info(f"[INFO] database refreshed")
     """
     need object.id do refresh:
 
@@ -48,7 +55,6 @@ async def add_artist(body: ArtistCreate, payload=Depends(verify_token), db: Asyn
     await db.commit() -> updata to database,  note: python doesn't know it!
     await db.refresh(artist) refresh and get artist_id
     """
-
     return artist
 
 

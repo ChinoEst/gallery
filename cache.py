@@ -9,8 +9,10 @@ def get_cache(key: str):
         return json.loads(data)
     return None
 
+
 def set_cache(key: str, value, expire: int = 60):
     r.set(key, json.dumps(value), ex=expire)
+
 
 def delete_cache(key: str):
     r.delete(key)

@@ -184,16 +184,22 @@ let currentArtistId = null;
 async function login() {
     const username = document.getElementById("username").value;
     const password = document.getElementById("password").value;
+    console.log("Logging in with", username, password);
+
     //fetch in js = client.post in py
     const res = await fetch(`${API}/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, password })
     });
+    console.log("Login response status:", res.status);
     //res.json: .json->object
     const data = await res.json();
     if (data.token) {
         token = data.token;
+        console.log("Login successful, token:", token);
+        console.log("Login successful, user:", username);
+        console.log("Switching to main page...");
         //display none : hide login page
         //id = login-page
         document.getElementById("login-page").style.display = "none";
@@ -206,15 +212,18 @@ async function login() {
         loadArtists();
         loadImages();
     } else {
+        console.log("Login failed:", data);
         alert("帳號或密碼錯誤");
     }
 }
 
 async function loadArtists() {
+    console.log("Loading artists...");
     const res = await fetch(`${API}/artists/`, {
         headers: { "Authorization": `Bearer ${token}` }
     });
     const artists = await res.json();
+    console.log("Loaded artists:", artists);
     //<div id="artist-list"></div>
     const list = document.getElementById("artist-list");
     /*
@@ -229,12 +238,19 @@ async function loadArtists() {
 }
 
 async function loadImages(artistId = null) {
+    console.log("Loading images...");
     let url = `${API}/images/`;
     if (artistId) url += `?artist_id=${artistId}`;
+
+    console.log("Fetch URL:", url);
     const res = await fetch(url, {
         headers: { "Authorization": `Bearer ${token}` }
     });
+    console.log("Images response status:", res.status);
     const images = await res.json();
+    console.log("Loaded images:", images);
+
+    //find id = gallery, clear it, then add new image card
     const gallery = document.getElementById("gallery");
     gallery.innerHTML = "";
     images.forEach(img => {
@@ -256,12 +272,16 @@ async function loadImages(artistId = null) {
         `;
         //like list.append()
         gallery.appendChild(card);
+        console.log(`Added image card for image ID: ${img.id}`);
     });
+    console.log("Finished loading images");
 }
 
 
 //only support solo select
 function filterArtist(artistId, el) {
+
+    console.log("Filtering images for artist ID:", artistId);
     //find all class = artist-itemm, remove active
     document.querySelectorAll(".artist-item").forEach(e => e.classList.remove("active"));
 
@@ -272,10 +292,13 @@ function filterArtist(artistId, el) {
     updateCount();
     //reloading image with artistId
     loadImages(artistId);
+    console.log("Filter applied, current artist ID:", currentArtistId);
 }
 
 
 function toggleSelect(id, checkbox) {
+
+    console.log(`Toggling selection for image ID: ${id}`);
     const card = checkbox.closest(".image-card");
     /* 
     closet:findup class = image-card
@@ -285,10 +308,13 @@ function toggleSelect(id, checkbox) {
         <img src="...">
     </div>
     */
+
     if (checkbox.checked) {
+        console.log(`Selecting image ID: ${id}`);
         selectedIds.add(id);
         card.classList.add("selected");
     } else {
+        console.log(`Deselecting image ID: ${id}`);
         selectedIds.delete(id);
         card.classList.remove("selected");
     }
@@ -297,15 +323,20 @@ function toggleSelect(id, checkbox) {
 
 
 function updateCount() {
+
     document.getElementById("selected-count").textContent = `已選取 ${selectedIds.size} 張`;
+    console.log(`Updated selection count: ${selectedIds.size}`);   
 }
 
 
 async function downloadSelected() {
+
     if (selectedIds.size === 0) {
+        console.log("No images selected for download.");
         alert("請先勾選圖片");
         return;
     }
+    console.log("Downloading selected images, IDs:", [...selectedIds]);
     const res = await fetch(`${API}/images/download`, {
         method: "POST",
         headers: {
@@ -318,25 +349,31 @@ async function downloadSelected() {
         body: JSON.stringify({ image_ids: [...selectedIds] })
     });
     const data = await res.json();
+    console.log("Download response:", data);
     alert(data.message);
 }
 
 
 async function searchImages() {
-    //trim() remove space
+    //trim() remove space ex." hello world"-> "hello world" 
+    //get id = search-tag value
     const tag = document.getElementById("search-tag").value.trim();
     if (!tag) return;
     
+    console.log("Searching images with tag:", tag);
     //call images/search in back
     let url = `${API}/images/search?tag=${encodeURIComponent(tag)}`;
     /*
     tag may contain chinese or others transfer it to safe word avoid error
     */
+    console.log("Constructed search URL:", url);
     if (currentArtistId) url += `&artist_id=${currentArtistId}`;
     
+    console.log("Final search URL:", url);
     const res = await fetch(url, {
         headers: { "Authorization": `Bearer ${token}` }
     });
+    console.log("Search response status:", res.status);
     const images = await res.json();
     
 
@@ -354,29 +391,39 @@ async function searchImages() {
                  loading="lazy">
         `;
         gallery.appendChild(card);
+        console.log(`Added image card for search result, image ID: ${img.id}`);
     });
+    console.log("Finished loading search results");
 }
 
 
 function toggleAddArtist() {
+
     const form = document.getElementById("add-artist-form");
     form.style.display = form.style.display === "none" ? "block" : "none";
     /*
     form.style.display = "block" if form.style.display == "none" else "none"
     */
+    console.log("Toggled add artist form, now:", form.style.display);
 }
 
 
 async function addArtist() {
+    console.log("Attempting to add artist...");
+    /*get name and url from input*/
     const name = document.getElementById("artist-name").value.trim();
-    const url = document.getElementById("artist-url").value.trim();
     const platform = document.getElementById("artist-platform").value.trim();
-    
-    if (!name || !url) {
-        alert("請填寫名稱和 URL");
+    console.log("Artist name:", name, "Platform:", platform);   
+
+    if (!name) {
+        alert("請填寫名稱");
+        console.log("Artist name is empty, aborting add artist.");
         return;
     }
-    
+
+    url = "https://www.artstation.com/{name}"
+
+    console.log("Constructed artist URL:", url);
     const res = await fetch(`${API}/artists/`, {
         method: "POST",
         headers: {
@@ -387,25 +434,31 @@ async function addArtist() {
     });
     
     const data = await res.json();
+    console.log("Add artist response:", data.status)
 
     if (res.ok) {
+        console.log("Artist added successfully, ID:", data.id);
         const artistId = data.id;
         alert(`新增 ${data.name} 成功，開始爬取圖片...`);
         
+        console.log("Triggering crawl for artist ID:", artistId);
         // 觸發爬蟲
         await fetch(`${API}/crawl/${artistId}`, {
             method: "POST",
             headers: { "Authorization": `Bearer ${token}` }
         });
-        
+
+        console.log("Crawl triggered for artist ID: ${artistId} success");
         alert("爬取完成！");
         document.getElementById("add-artist-form").style.display = "none";
         document.getElementById("artist-name").value = "";
         document.getElementById("artist-url").value = "";
         loadArtists();
         loadImages();
+        console.log("Reloaded artists and images after adding new artist.");
     }
     else {
+        console.log("Failed to add artist:", data);
         alert(data.detail || "新增失敗");
     }
 }
