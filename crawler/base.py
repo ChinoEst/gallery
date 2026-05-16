@@ -4,6 +4,6 @@ from crawler.artstation import crawl_artstation
 
 async def crawl_artist(artist: Artist, db: AsyncSession):
     if artist.platform.lower() == "artstation":
-        await crawl_artstation(artist, db)
+        await crawl_artstation(artist)
     else:
         print(f"不支援的平台: {artist.platform}")

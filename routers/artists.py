@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, func
 from database import get_db
 from models import Artist
 from schemas import ArtistCreate, ArtistResponse
@@ -58,15 +58,46 @@ async def add_artist(body: ArtistCreate, payload=Depends(verify_token), db: Asyn
     return artist
 
 
+@router.get("/artist/{name}", response_model=ArtistDetailResponse)
+async def artist_detail(name: str, payload=Depands(verify_token), db: AsyncSession = Depends(get_db)):
+
+    logging.info("[INFO] fetching artist detail from database...")
+    result = await db.execute(select(Artist).where(Artist.name == name))
+    artist = result.scalar_one_or_none()
+    if not artist:
+        logging.warning(f"[WARNING] artist not found")
+        raise HTTPException(status_code=404, detail="找不到此創作者")
+    
+    logging.info("[INFO] artist found, fetching image count...")
+    Len = await db.execute(select(func.count()).select_from(Image).join(Artist).where(Artist.name == name))
+    Len = Len.scalar_one()
+    logging.info(f"[INFO] image count for artist name={artist.name} is {Len}")
+
+    return ArtistDetailResponse(
+        id=artist.id,
+        name=artist.name,
+        url=artist.url,
+        platform=artist.platform,
+        created_at=artist.created_at,
+        image_count=Len
+    )
+
+
+    
+
+
 #path: artists/{artist_id}
 #type: delete
 @router.delete("/{artist_id}")
 async def delete_artist(artist_id: int, payload=Depends(verify_token), db: AsyncSession = Depends(get_db)):
+    logging.info(f"[INFO] checking whether artist id={artist_id} exists...")
     result = await db.execute(select(Artist).where(Artist.id == artist_id))
     artist = result.scalar_one_or_none()
     if not artist:
+        logging.warning("[WARNING] artist not found")
         raise HTTPException(status_code=404, detail="找不到此創作者")
     await db.delete(artist)
+    logging.info(f"[INFO] artist {artist.name} delete successfully!")
     await db.commit()
     """
     not need id ,don't refresh

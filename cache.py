@@ -1,6 +1,7 @@
 import redis
 import json
 
+
 r = redis.Redis(host="redis", port=6379, decode_responses=True)
 
 def get_cache(key: str):

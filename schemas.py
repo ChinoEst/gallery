@@ -55,3 +55,12 @@ class ImageResponse(BaseModel):
 
 class DownloadRequest(BaseModel):
     image_ids: List[int]
+
+
+class ArtistDetailResponse(BaseModel):
+    id: int
+    name: str
+    url: str
+    platform: str
+    created_at: datetime
+    image_count: int

@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.orm import selectinload
 from database import get_db
 from models import Image, Tag
@@ -66,11 +66,15 @@ async def search_images(
 #type get
 #return format: list[ImageResponse]
 @router.get("/", response_model=list[ImageResponse])
-async def get_images(payload=Depends(verify_token), db: AsyncSession = Depends(get_db)):
+async def get_images(page: int = 1, size: int = 2, payload=Depends(verify_token), db: AsyncSession = Depends(get_db)):
     
     logging.info("[INFO] fetching images from database...")
+    result = await db.execute(select(func.count()).select_from(Image))
+    Len = result.scalar_one()
+    logging.info(f"[INFO] total image count is {Len}")
+
     result = await db.execute(
-        select(Image).options(selectinload(Image.tags))
+        select(Image).options(selectinload(Image.tags)).offset((page-1)*size).limit(size)
     )
     logging.info("[INFO] fetching images finished!")
 
@@ -187,3 +191,4 @@ async def delete_image(image_id: int, payload=Depends(verify_token), db: AsyncSe
     logging.info(f"[INFO] image_id={image_id} delete successfully!")
     await db.commit()
     return {"message": "刪除成功"}
+

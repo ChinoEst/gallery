@@ -65,11 +65,10 @@ async def crawl_project(client, hash_id: str, artist: Artist, db: AsyncSession):
             """
                 add   -> flush -> commit -> refresh
             register    send     updata     sync
-            
 
             flush: getimage.id before updata
 
-
+            Note: after commit, session expored, need refresh to get new id
             """
             await db.flush()
 
@@ -104,4 +103,25 @@ async def crawl_artstation(artist: Artist, db: AsyncSession):##
         logging.info(f"[INFO] found {len(projects)} projects for user {username}")
         for p in projects:
             await crawl_project(client, p["hash_id"], artist, db)
+
+        """
+        asyncio.gather ->use same session at the same time -> cause session conflict
+        for p in projects:
+            await crawl_project(client, p["hash_id"], artist, db)
+        -> still use same session but not at the same time, because of semaphore, but it will be slower
+
+        another way:
+        async with AsyncSession(impersonate="chrome") as client:
+            for p in projects:
+                await crawl_project(client, p["hash_id"], artist_id)
+
+         def crawl_project(client, hash_id, artist_id):
+            async with AsyncSession() as db:
+                do something
+        
+        defected because of too many session create and close, but it will be faster
+        i resort stable way, one after one.
+                
+
+        """
     logging.info(f"[INFO] ArtStation crawl completed for user: {artist_name}, total projects: {len(projects)}")
