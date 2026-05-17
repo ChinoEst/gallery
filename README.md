@@ -1,1 +1,80 @@
-# gallery
+# Gallery
+
+創作者追蹤與圖片收藏管理系統。追蹤 ArtStation 上喜歡的創作者，自動爬取作品，並透過網頁介面瀏覽、搜尋、批次下載。
+
+## 功能
+
+- 帳號系統（JWT 認證、角色權限控制 RBAC）
+- 創作者管理（新增、追蹤）
+- ArtStation 爬蟲（自動抓取作品與標籤）
+- 圖片瀏覽（分頁、依創作者篩選、依 Tag 搜尋）
+- 批次下載（勾選圖片下載到本地）
+- Redis 快取
+- Docker 容器化
+
+## 技術棧
+
+**後端**
+- FastAPI（非同步 API）
+- SQLAlchemy（async ORM）+ SQLite
+- JWT（python-jose）
+- curl_cffi（繞過 Cloudflare 爬取 ArtStation）
+- Redis（快取）
+
+**前端**
+- HTML + JavaScript（純前端，無框架）
+
+**部署**
+- Docker + docker-compose
+
+## 專案結構
+
+```
+gallery/
+├── crawler/
+│   ├── base.py          # 爬蟲入口，依平台分配
+│   └── artstation.py    # ArtStation 爬蟲
+├── routers/
+│   ├── auth.py          # 登入、註冊
+│   ├── artists.py       # 創作者管理
+│   ├── images.py        # 圖片管理
+│   └── crawl.py         # 觸發爬蟲
+├── frontend/
+│   └── index.html       # 前端介面
+├── server.py            # FastAPI 入口
+├── database.py          # 資料庫連線
+├── models.py            # 資料表定義
+├── schemas.py           # API 輸入輸出格式
+├── cache.py             # Redis 快取
+├── Dockerfile
+└── docker-compose.yml
+```
+
+## 快速開始
+
+**使用 Docker（推薦）**
+
+```bash
+git clone https://github.com/ChinoEst/gallery.git
+cd gallery
+docker-compose up --build
+```
+
+API 文件：`http://localhost:8000/docs`
+
+**本地開發**
+
+```bash
+pip install -r requirements.txt
+python -m uvicorn server:app --reload
+```
+
+前端：直接用瀏覽器開啟 `frontend/index.html`，或使用 Live Server。
+
+## 使用流程
+
+1. 開啟前端介面，註冊或登入帳號
+2. 在左側新增想追蹤的 ArtStation 創作者（輸入名稱和個人頁網址）
+3. 系統自動爬取該創作者的作品
+4. 瀏覽圖片、用 Tag 搜尋、或依創作者篩選
+5. 勾選想要的圖片，點擊下載
