@@ -4,7 +4,7 @@ from sqlalchemy import select, func
 from sqlalchemy.orm import selectinload
 from database import get_db
 from models import Image, Tag
-from schemas import ImageResponse, DownloadRequest
+from schemas import ImageResponse, DownloadRequest,ImagepageResponse
 from routers.auth import verify_token
 from cache import get_cache, set_cache
 import aiofiles
@@ -65,17 +65,28 @@ async def search_images(
 #path: images
 #type get
 #return format: list[ImageResponse]
-@router.get("/", response_model=list[ImageResponse])
-async def get_images(page: int = 1, size: int = 2, payload=Depends(verify_token), db: AsyncSession = Depends(get_db)):
+@router.get("/", response_model=ImagepageResponse)
+async def get_images(page: int = 1, size: int = 2, artist_id: int = None, payload=Depends(verify_token), db: AsyncSession = Depends(get_db)):
     
     logging.info("[INFO] fetching images from database...")
     result = await db.execute(select(func.count()).select_from(Image))
+    if artist_id:
+        logging.info(f"[INFO] filter by artist_id: {artist_id}")
+        result = await db.execute(select(func.count()).select_from(Image).where(Image.artist_id == artist_id))
+    
+
     Len = result.scalar_one()
     logging.info(f"[INFO] total image count is {Len}")
 
     result = await db.execute(
         select(Image).options(selectinload(Image.tags)).offset((page-1)*size).limit(size)
     )
+    if artist_id:
+        result = await db.execute(
+        select(Image).options(selectinload(Image.tags)).where(Image.artist_id == artist_id).offset((page-1)*size).limit(size)
+    )
+    
+    
     logging.info("[INFO] fetching images finished!")
 
     """
@@ -90,7 +101,12 @@ async def get_images(page: int = 1, size: int = 2, payload=Depends(verify_token)
     which mean when you need, load it. when you doesn't, it doesn't load.
     In async can't do lazy loading and other things(connect, and so on...) at same time, so use "selectinload" to get info of image we need
     """
-    return result.scalars().all()
+    return ImagepageResponse(
+        total=Len,
+        page=page,
+        size=size,
+        items=result.scalars().all()
+    )
 
 
 

@@ -14,7 +14,7 @@ logger = logging.getLogger("gallery")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    logger.info("初始化資料庫")
+    logger.info("database ")
     await init_db()
     yield
 

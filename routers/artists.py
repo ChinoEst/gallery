@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 from database import get_db
 from models import Artist
-from schemas import ArtistCreate, ArtistResponse
+from schemas import ArtistCreate, ArtistResponse, ArtistDetailResponse
 from routers.auth import verify_token
 import logging
 
@@ -59,7 +59,7 @@ async def add_artist(body: ArtistCreate, payload=Depends(verify_token), db: Asyn
 
 
 @router.get("/artist/{name}", response_model=ArtistDetailResponse)
-async def artist_detail(name: str, payload=Depands(verify_token), db: AsyncSession = Depends(get_db)):
+async def artist_detail(name: str, payload = Depends(verify_token), db: AsyncSession = Depends(get_db)):
 
     logging.info("[INFO] fetching artist detail from database...")
     result = await db.execute(select(Artist).where(Artist.name == name))

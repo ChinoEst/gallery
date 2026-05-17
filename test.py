@@ -11,7 +11,7 @@ async def main():
         headers = {"Authorization": f"Bearer {token}"}
         print(f"登入成功")
 
-        
+        """
         # 觸發爬蟲
         res = await client.post(f"{BASE_URL}/crawl/1", headers=headers)
         print(f"爬蟲: {res.json()}")
@@ -23,8 +23,14 @@ async def main():
         for img in images[:3]:
             print(f"  - {img['original_url']}")
         """
+        """
         res = await client.get(f"{BASE_URL}/images/search?tag=Character Design", headers=headers)
         print(f"搜尋結果: {len(res.json())} 張")
         """
+        res = await client.get(f"{BASE_URL}/images/?page=1&size=5", headers=headers)
+        print(f"第一頁: {len(res.json())} 張")
+
+        res = await client.get(f"{BASE_URL}/images/?page=2&size=5", headers=headers)
+        print(f"第二頁: {len(res.json())} 張")
 
 asyncio.run(main())

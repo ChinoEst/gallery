@@ -64,3 +64,10 @@ class ArtistDetailResponse(BaseModel):
     platform: str
     created_at: datetime
     image_count: int
+
+
+class ImagepageResponse(BaseModel):
+    total: int
+    page: int
+    size: int
+    items: List[ImageResponse]

@@ -167,18 +167,26 @@
     </div>
     <div class="bottombar">
         <span id="selected-count">已選取 0 張</span>
+        <div style="display:flex; gap:8px;">
+            <button onclick="pageChange('prev')">上一頁</button>    
+            <button onclick="pageChange('next')">下一頁</button>
+        </div>
         <button onclick="downloadSelected()">下載選取</button>
     </div>
 </div>
 
+
 <script>
+    
 //const: never change, but could change value in object 
 //let: could change 
 const API = "http://127.0.0.1:8000";
+const pageSize = 20;
 let token = "";
 let selectedIds = new Set();
 let currentArtistId = null;
-
+let currentPage = 1;
+let totalImages = 0;
 
 
 async function login() {
@@ -217,6 +225,8 @@ async function login() {
     }
 }
 
+
+
 async function loadArtists() {
     console.log("Loading artists...");
     const res = await fetch(`${API}/artists/`, {
@@ -240,20 +250,28 @@ async function loadArtists() {
 async function loadImages(artistId = null) {
     console.log("Loading images...");
     let url = `${API}/images/`;
-    if (artistId) url += `?artist_id=${artistId}`;
+    url += `?page=${currentPage}&size=${pageSize}`;
+
+
+    if (artistId) url += `&artist_id=${artistId}`;
 
     console.log("Fetch URL:", url);
     const res = await fetch(url, {
         headers: { "Authorization": `Bearer ${token}` }
     });
+
     console.log("Images response status:", res.status);
+    //convert json to object
     const images = await res.json();
     console.log("Loaded images:", images);
+
+    totalImages = images.total;
+    console.log(images);
 
     //find id = gallery, clear it, then add new image card
     const gallery = document.getElementById("gallery");
     gallery.innerHTML = "";
-    images.forEach(img => {
+    images.items.forEach(img => {
         //build <div>
         const card = document.createElement("div");
 
@@ -277,6 +295,11 @@ async function loadImages(artistId = null) {
     console.log("Finished loading images");
 }
 
+function pageChange(direction){
+    if (direction === "next" && currentPage * pageSize < totalImages) currentPage++;
+    else if (direction === "prev" && currentPage > 1) currentPage--;
+    loadImages(currentArtistId);
+}
 
 //only support solo select
 function filterArtist(artistId, el) {
