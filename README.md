@@ -33,26 +33,6 @@
 **部署**
 - Docker + docker-compose
 
-## 專案結構
-
-gallery/
-├── crawler/
-│   ├── base.py          # 爬蟲入口，依平台分配
-│   └── artstation.py    # ArtStation 爬蟲
-├── routers/
-│   ├── auth.py          # 登入、註冊
-│   ├── artists.py       # 創作者管理
-│   ├── images.py        # 圖片管理
-│   └── crawl.py         # 觸發爬蟲
-├── frontend/
-│   └── index.html       # 前端介面
-├── server.py            # FastAPI 入口
-├── database.py          # 資料庫連線
-├── models.py            # 資料表定義
-├── schemas.py           # API 輸入輸出格式
-├── cache.py             # Redis 快取
-├── Dockerfile
-└── docker-compose.yml
 
 ## 快速開始
 
