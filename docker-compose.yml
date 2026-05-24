@@ -2,16 +2,16 @@ services:
   backend:
     build: .
     ports:
-      - "8000:8000"
+      - "8000:8000"   # localhost:8000
     volumes:
-      - ./gallery.db:/app/gallery.db
-      - ./uploads:/app/uploads
-    depends_on:
-      - redis
+      - ./gallery.db:/app/gallery.db # load database from host
+      - ./uploads:/app/uploads  #load images from host
+    depends_on:   
+      - redis  #redis start first
     restart: unless-stopped
 
   redis:
-    image: redis:7-alpine
+    image: redis:7-alpine   
     ports:
-      - "6379:6379"
-    restart: unless-stopped
+      - "6379:6379"  # redics is 6379
+    restart: unless-stopped  #auto restart unless stopped by user
