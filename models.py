@@ -12,6 +12,7 @@ class User(Base):
     role = Column(String, default="user")
     created_at = Column(DateTime, default=datetime.utcnow)
 
+    #back_populates:update both image.user and user.images
     images = relationship("Image", back_populates="user")
 
 class Artist(Base):
@@ -29,6 +30,7 @@ class Image(Base):
     __tablename__ = "images"
 
     id = Column(Integer, primary_key=True, index=True)
+    #connect base on user.id
     user_id = Column(Integer, ForeignKey("users.id"))
     artist_id = Column(Integer, ForeignKey("artists.id"))
     filename = Column(String, nullable=True)
@@ -38,8 +40,11 @@ class Image(Base):
     local_path = Column(String, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
+    #one to many relationship with User and Artist
     user = relationship("User", back_populates="images")
     artist = relationship("Artist", back_populates="images")
+    
+    #many to many relationship with Tag through ImageTag
     tags = relationship("Tag", secondary="image_tags", back_populates="images")
 
 class Tag(Base):

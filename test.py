@@ -27,10 +27,17 @@ async def main():
         res = await client.get(f"{BASE_URL}/images/search?tag=Character Design", headers=headers)
         print(f"搜尋結果: {len(res.json())} 張")
         """
+        """
         res = await client.get(f"{BASE_URL}/images/?page=1&size=5", headers=headers)
         print(f"第一頁: {len(res.json())} 張")
 
         res = await client.get(f"{BASE_URL}/images/?page=2&size=5", headers=headers)
         print(f"第二頁: {len(res.json())} 張")
+        """
+        res = await client.get(f"{BASE_URL}/images/1", headers=headers)
+        print(f"圖片細節: {res.json()}")
+        res = await client.get(f"{BASE_URL}/images/1", headers=headers)
+        print(f"圖片細節: {res.json()}")
+
 
 asyncio.run(main())

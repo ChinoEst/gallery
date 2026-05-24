@@ -183,6 +183,7 @@ async def get_image(image_id: int, payload=Depends(verify_token), db: AsyncSessi
         logging.warning(f"[WARNING] image_id={image_id} not found")
         raise HTTPException(status_code=404, detail="找不到此圖片")
     logging.info(f"[INFO] image_id={image_id} found in database")
+    #SQLAlchemy object -> Pydantic object -> json
     image_data = ImageResponse.model_validate(image).model_dump(mode="json")
     set_cache(cache_key, image_data, expire=300)
 
