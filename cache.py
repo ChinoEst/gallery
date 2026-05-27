@@ -11,7 +11,7 @@ def get_cache(key: str):
     return None
 
 
-def set_cache(key: str, value, expire: int = 60):
+def set_cache(key: str, value, expire: int = 3600):
     r.set(key, json.dumps(value), ex=expire)
 
 

@@ -6,6 +6,7 @@ services:
     volumes:
       - ./gallery.db:/app/gallery.db # load database from host
       - ./uploads:/app/uploads  #load images from host
+      - .:/app  #load code from host, for development
     depends_on:   
       - redis  #redis start first
     restart: unless-stopped

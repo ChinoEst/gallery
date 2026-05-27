@@ -167,10 +167,6 @@
     </div>
     <div class="bottombar">
         <span id="selected-count">已選取 0 張</span>
-        <div style="display:flex; gap:8px;">
-            <button onclick="pageChange('prev')">上一頁</button>    
-            <button onclick="pageChange('next')">下一頁</button>
-        </div>
         <button onclick="downloadSelected()">下載選取</button>
     </div>
 </div>
@@ -182,11 +178,32 @@
 //let: could change 
 const API = "http://127.0.0.1:8000";
 const pageSize = 20;
-let token = "";
+let token = localStorage.getItem('token') || null
 let selectedIds = new Set();
 let currentArtistId = null;
-let currentPage = 1;
 let totalImages = 0;
+let last_id = 0;
+
+
+//when window load, if token exist, show main page and load artists and images
+window.onload = () => {
+
+    const gallery = document.getElementById("gallery");
+    gallery.addEventListener("scroll", () => {
+        if (gallery.scrollTop + gallery.clientHeight >= gallery.scrollHeight) {
+            loadImages(currentArtistId, true);
+        }
+    });
+    
+    if (token) {
+        document.getElementById("login-page").style.display = "none";
+        document.getElementById("main-page").style.display = "flex";
+        loadArtists();
+        loadImages();
+    }
+}
+
+
 
 
 async function login() {
@@ -205,6 +222,10 @@ async function login() {
     const data = await res.json();
     if (data.token) {
         token = data.token;
+
+        //save token to localStorage, key = token, value = token
+        localStorage.setItem('token', token);
+        
         console.log("Login successful, token:", token);
         console.log("Login successful, user:", username);
         console.log("Switching to main page...");
@@ -219,6 +240,16 @@ async function login() {
         document.getElementById("user-info").textContent = username;
         loadArtists();
         loadImages();
+
+        const galleray = document.getElementById("gallery");
+        galleray.addEventListener("scroll", () => {
+            if (galleray.scrollTop + galleray.clientHeight >= galleray.scrollHeight) {
+                console.log("Reached bottom of gallery, loading more images...");
+                loadImages(null, true);
+            }
+        })
+
+
     } else {
         console.log("Login failed:", data);
         alert("帳號或密碼錯誤");
@@ -247,11 +278,19 @@ async function loadArtists() {
     });
 }
 
-async function loadImages(artistId = null) {
+async function loadImages(artistId = null, update = false) {
+
+    if (!update){
+        last_id = 0;
+        console.log("Resetting last_id for new image load.");
+    }
+
     console.log("Loading images...");
     let url = `${API}/images/`;
-    url += `?page=${currentPage}&size=${pageSize}`;
-
+    url += `?size=${pageSize}`;
+    if (last_id){
+        url += `&last_id=${last_id}`;
+    }
 
     if (artistId) url += `&artist_id=${artistId}`;
 
@@ -268,13 +307,22 @@ async function loadImages(artistId = null) {
     totalImages = images.total;
     console.log(images);
 
-    //find id = gallery, clear it, then add new image card
+    //find id = gallery
     const gallery = document.getElementById("gallery");
-    gallery.innerHTML = "";
+
+    if (update){
+        console.log("loading more images...in same page");
+    }
+    else{
+        //clear it
+        gallery.innerHTML = "";
+        console.log("refresh and loading images");
+    }
+
     images.items.forEach(img => {
         //build <div>
         const card = document.createElement("div");
-
+        
         //add class = image-card
         // <div> -> <div class= image-card>
         card.className = "image-card";
@@ -290,16 +338,13 @@ async function loadImages(artistId = null) {
         `;
         //like list.append()
         gallery.appendChild(card);
+        last_id = img.id;
         console.log(`Added image card for image ID: ${img.id}`);
+        
     });
     console.log("Finished loading images");
 }
 
-function pageChange(direction){
-    if (direction === "next" && currentPage * pageSize < totalImages) currentPage++;
-    else if (direction === "prev" && currentPage > 1) currentPage--;
-    loadImages(currentArtistId);
-}
 
 //only support solo select
 function filterArtist(artistId, el) {
@@ -485,6 +530,9 @@ async function addArtist() {
         alert(data.detail || "新增失敗");
     }
 }
+
+
+
 
 
 </script>

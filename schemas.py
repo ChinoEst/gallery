@@ -68,6 +68,5 @@ class ArtistDetailResponse(BaseModel):
 
 class ImagepageResponse(BaseModel):
     total: int
-    page: int
     size: int
     items: List[ImageResponse]

@@ -2,13 +2,15 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 from database import get_db
-from models import Artist
+from models import Artist, Image
 from schemas import ArtistCreate, ArtistResponse, ArtistDetailResponse
 from routers.auth import verify_token
 import logging
 
 #define
 router = APIRouter(prefix="/artists", tags=["artists"])
+
+
 
 
 #path: artists
@@ -103,3 +105,6 @@ async def delete_artist(artist_id: int, payload=Depends(verify_token), db: Async
     not need id ,don't refresh
     """
     return {"message": f"已刪除 {artist.name}"}
+
+
+

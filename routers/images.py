@@ -6,7 +6,7 @@ from database import get_db
 from models import Image, Tag
 from schemas import ImageResponse, DownloadRequest,ImagepageResponse
 from routers.auth import verify_token
-from cache import get_cache, set_cache
+from cache import get_cache, set_cache, delete_cache
 import aiofiles
 import httpx
 import asyncio
@@ -66,7 +66,7 @@ async def search_images(
 #type get
 #return format: list[ImageResponse]
 @router.get("/", response_model=ImagepageResponse)
-async def get_images(page: int = 1, size: int = 2, artist_id: int = None, payload=Depends(verify_token), db: AsyncSession = Depends(get_db)):
+async def get_images(last_id: int  = 0, size: int = 20, artist_id: int = None, payload=Depends(verify_token), db: AsyncSession = Depends(get_db)):
     
     logging.info("[INFO] fetching images from database...")
     result = await db.execute(select(func.count()).select_from(Image))
@@ -78,14 +78,15 @@ async def get_images(page: int = 1, size: int = 2, artist_id: int = None, payloa
     Len = result.scalar_one()
     logging.info(f"[INFO] total image count is {Len}")
 
-    result = await db.execute(
-        select(Image).options(selectinload(Image.tags)).offset((page-1)*size).limit(size)
-    )
+    
     if artist_id:
         result = await db.execute(
-        select(Image).options(selectinload(Image.tags)).where(Image.artist_id == artist_id).offset((page-1)*size).limit(size)
+        select(Image).options(selectinload(Image.tags)).where(Image.artist_id == artist_id).where(Image.id > last_id).limit(size)
     )
-    
+    else:
+        result = await db.execute(
+        select(Image).options(selectinload(Image.tags)).where(Image.id > last_id).limit(size)
+    )
     
     logging.info("[INFO] fetching images finished!")
 
@@ -103,7 +104,6 @@ async def get_images(page: int = 1, size: int = 2, artist_id: int = None, payloa
     """
     return ImagepageResponse(
         total=Len,
-        page=page,
         size=size,
         items=result.scalars().all()
     )
@@ -134,6 +134,8 @@ async def download_one(image: Image, db: AsyncSession):
                 image.local_path = filepath
                 image.is_downloaded = True
 
+                delete_cache(f"image:{image.id}")
+
                 logging.info(f"[INFO] updating info of image {image.id} in database...")
                 await db.commit()
                 logging.info(f"[INFO] info of image {image.id} updated finished!")
@@ -147,8 +149,8 @@ async def download_one(image: Image, db: AsyncSession):
 async def download_images(body: DownloadRequest, payload=Depends(verify_token), db: AsyncSession = Depends(get_db)):
     #SQL search
     logging.info(f"[INFO] checking images with ids: {body.image_ids}...")
+    #in_ = 'IN' in SQL
     result = await db.execute(select(Image).where(Image.id.in_(body.image_ids)))
-    logging
     images = result.scalars().all()
     if not images:
         logging.warning("[WARNING] no images found")
@@ -207,5 +209,9 @@ async def delete_image(image_id: int, payload=Depends(verify_token), db: AsyncSe
     await db.delete(image)
     logging.info(f"[INFO] image_id={image_id} delete successfully!")
     await db.commit()
+
+    delete_cache(f"image:{image_id}")
+    
+
     return {"message": "刪除成功"}
 
