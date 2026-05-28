@@ -241,15 +241,6 @@ async function login() {
         loadArtists();
         loadImages();
 
-        const galleray = document.getElementById("gallery");
-        galleray.addEventListener("scroll", () => {
-            if (galleray.scrollTop + galleray.clientHeight >= galleray.scrollHeight) {
-                console.log("Reached bottom of gallery, loading more images...");
-                loadImages(null, true);
-            }
-        })
-
-
     } else {
         console.log("Login failed:", data);
         alert("帳號或密碼錯誤");
