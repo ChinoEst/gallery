@@ -17,9 +17,6 @@ Redis 快取、Docker 容器化、JWT 認證）與複習既有基礎
 - Redis 快取
 - Docker 容器化
 
-**開發中**
-- 角色權限控管（RBAC）
-- 批次下載（勾選圖片下載到本地）
 
 ## 技術棧
 
@@ -29,6 +26,8 @@ Redis 快取、Docker 容器化、JWT 認證）與複習既有基礎
 - JWT（python-jose）
 - curl_cffi（繞過 Cloudflare 爬取 ArtStation）
 - Redis（快取常用查詢結果）
+- RBAC 角色權限控 (開發中)
+
 
 **前端**
 - HTML + JavaScript（純前端，無框架）
