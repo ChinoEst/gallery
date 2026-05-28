@@ -9,17 +9,6 @@ Redis 快取、Docker 容器化、JWT 認證）與複習既有基礎
 
 ## 功能
 
-**已完成**
-- 帳號系統（JWT 認證）
-- 創作者管理（新增、追蹤）
-- ArtStation 爬蟲（自動抓取作品與標籤）
-- 圖片瀏覽（分頁、依創作者篩選、依 Tag 搜尋）
-- Redis 快取
-- Docker 容器化
-
-
-## 技術棧
-
 **後端**
 - FastAPI（非同步 API，適合 I/O 密集的爬蟲場景）
 - SQLAlchemy（async ORM）+ SQLite
