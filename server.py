@@ -4,6 +4,7 @@ from database import init_db
 from routers import auth, artists, images, crawl
 from fastapi.middleware.cors import CORSMiddleware
 from crawler.refresh import refresh_artists
+import asyncio
 import logging
 
 logging.basicConfig(
@@ -17,7 +18,7 @@ logger = logging.getLogger("gallery")
 async def lifespan(app: FastAPI):
     logger.info("database ")
     await init_db()
-    await refresh_artists()
+    #asyncio.create_task(refresh_artists())
     yield
 
 app = FastAPI(lifespan=lifespan)

@@ -113,6 +113,10 @@
             cursor: pointer;
         }
         .bottombar button:hover { background: #3a8eef; }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body>
@@ -123,7 +127,10 @@
         <h2>圖庫系統</h2>
         <input type="text" id="username" placeholder="帳號">
         <input type="password" id="password" placeholder="密碼">
-        <button onclick="login()">登入</button>
+        <div style="display: flex; gap: 8px;">
+            <button onclick="login()">登入</button>
+            <button onclick="regist()">註冊</button>
+        </div>
     </div>
 </div>
 
@@ -153,8 +160,6 @@
             <div id="add-artist-form" style="display:none; margin-top:12px;">
                 <input type="text" id="artist-name" placeholder="名稱" 
                     style="width:100%; padding:6px; margin-bottom:6px; background:#3a3a3a; border:none; border-radius:6px; color:#fff;">
-                <input type="text" id="artist-url" placeholder="ArtStation URL" 
-                    style="width:100%; padding:6px; margin-bottom:6px; background:#3a3a3a; border:none; border-radius:6px; color:#fff;">
                 <input type="text" id="artist-platform" placeholder="平台" value="artstation"
                     style="width:100%; padding:6px; margin-bottom:6px; background:#3a3a3a; border:none; border-radius:6px; color:#fff;">
                 <button onclick="addArtist()" 
@@ -171,6 +176,15 @@
     </div>
 </div>
 
+<!-- 爬取中 modal -->
+<div id="crawl-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:9999; align-items:center; justify-content:center;">
+    <div style="background:white; padding:2rem; border-radius:8px; text-align:center; color:#333;">
+        <div style="width:40px; height:40px; border:4px solid #eee; border-top:4px solid #4a9eff; border-radius:50%; animation:spin 1s linear infinite; margin:0 auto 1rem;"></div>
+        <p id="crawl-status">正在爬取圖片...</p>
+        <p id="crawl-progress"></p>
+    </div>
+</div>
+
 
 <script>
     
@@ -183,28 +197,56 @@ let selectedIds = new Set();
 let currentArtistId = null;
 let totalImages = 0;
 let last_id = 0;
+let isLoading = false;
 
 
 //when window load, if token exist, show main page and load artists and images
-window.onload = () => {
-
+window.onload = async () => {
+    
     const gallery = document.getElementById("gallery");
     gallery.addEventListener("scroll", () => {
+        console.log("scroll triggered, isLoading:", isLoading);
+        if (isLoading) return;
         if (gallery.scrollTop + gallery.clientHeight >= gallery.scrollHeight) {
-            loadImages(currentArtistId, true);
-        }
+            isLoading = true;
+            loadImages(currentArtistId, true).finally(() => {
+            isLoading = false;
+            });
+        } 
     });
     
     if (token) {
-        document.getElementById("login-page").style.display = "none";
-        document.getElementById("main-page").style.display = "flex";
-        loadArtists();
-        loadImages();
+        const res = await fetch(`${API}/artists/`, {
+            headers: { "Authorization": `Bearer ${token}` }
+        });
+        if (res.ok) {
+            document.getElementById("login-page").style.display = "none";
+            document.getElementById("main-page").style.display = "flex";
+            loadArtists();
+            loadImages();
+        } else {
+            localStorage.removeItem('token');
+            token = null;
+        }
     }
 }
 
 
-
+async function regist() {
+    const username = document.getElementById("username").value;
+    const password = document.getElementById("password").value;
+    console.log("Registering with", username, password);
+    const res = await fetch(`${API}/auth/register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password })
+    });
+    if (res.ok){
+        alert("註冊成功");
+    } else {
+        alert("註冊失敗");
+    }
+}
 
 async function login() {
     const username = document.getElementById("username").value;
@@ -265,8 +307,35 @@ async function loadArtists() {
     */
     list.innerHTML = `<div class="artist-item active" onclick="filterArtist(null, this)">全部</div>`;
     artists.forEach(a => {
-        list.innerHTML += `<div class="artist-item" onclick="filterArtist(${a.id}, this)">${a.name}</div>`;
+        list.innerHTML += `<div class="artist-item" onclick="filterArtist(${a.id}, this)">
+            <span>${a.name}</span>
+            <button onclick="deleteArtist(event, ${a.id})" style="float:right; background:transparent; border:none; color:#f66; cursor:pointer; font-size:14px;">✕</button>
+            </div>`;
     });
+}
+
+
+async function deleteArtist(event, artistId) {
+    event.stopPropagation();
+    if (!confirm("確定要刪除這個創作者嗎？")) return;
+    console.log("Deleting artist ID:", artistId);
+    const res = await fetch(`${API}/artists/${artistId}`, {
+        method: "DELETE",
+        headers: { "Authorization": `Bearer ${token}` }
+    });
+    if (res.ok) {
+        console.log("Artist deleted successfully, ID:", artistId);
+        alert("刪除成功");
+        if (currentArtistId === artistId) {
+            currentArtistId = null;
+        }
+        loadArtists();
+        loadImages();
+    } else {
+        const data = await res.json();
+        console.log("Failed to delete artist:", data);
+        alert(data.detail || "刪除失敗");
+    }
 }
 
 async function loadImages(artistId = null, update = false) {
@@ -480,7 +549,7 @@ async function addArtist() {
         return;
     }
 
-    url = "https://www.artstation.com/{name}"
+    const url = `https://www.artstation.com/${name}`;
 
     console.log("Constructed artist URL:", url);
     const res = await fetch(`${API}/artists/`, {
@@ -498,7 +567,10 @@ async function addArtist() {
     if (res.ok) {
         console.log("Artist added successfully, ID:", data.id);
         const artistId = data.id;
-        alert(`新增 ${data.name} 成功，開始爬取圖片...`);
+
+        //show crawling modal
+        isLoading = true;
+        document.getElementById("crawl-modal").style.display = "flex";
         
         console.log("Triggering crawl for artist ID:", artistId);
         // 觸發爬蟲
@@ -508,12 +580,25 @@ async function addArtist() {
         });
 
         console.log("Crawl triggered for artist ID: ${artistId} success");
-        alert("爬取完成！");
-        document.getElementById("add-artist-form").style.display = "none";
-        document.getElementById("artist-name").value = "";
-        document.getElementById("artist-url").value = "";
-        loadArtists();
-        loadImages();
+
+        //update crawl status
+        document.getElementById("crawl-status").textContent = "爬取完成！";
+        const Res_artists = await fetch(`${API}/artist/${name}`,{
+            method: "GET",
+            headers: { "Authorization": `Bearer ${token}` }
+        });
+        const artist_json = await Res_artists.json();
+        document.getElementById("crawl-progress").textContent = `共爬取 ${artist_json.image_count} 張圖片`;
+
+        //hide modal after 1s, reload artists and images
+        setTimeout(async () => {
+            document.getElementById("crawl-modal").style.display = "none";
+            document.getElementById("add-artist-form").style.display = "none";
+            document.getElementById("artist-name").value = "";
+            loadArtists();
+            await loadImages();
+            isLoading = false;
+        }, 2000);
         console.log("Reloaded artists and images after adding new artist.");
     }
     else {

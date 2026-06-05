@@ -99,7 +99,8 @@ async def delete_artist(artist_id: int, payload=Depends(verify_token), db: Async
         logging.warning("[WARNING] artist not found")
         raise HTTPException(status_code=404, detail="找不到此創作者")
     await db.delete(artist)
-    logging.info(f"[INFO] artist {artist.name} delete successfully!")
+    logging.info(f"[INFO] artist {artist.name}  in database artist delete successfully!")
+    
     await db.commit()
     """
     not need id ,don't refresh

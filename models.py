@@ -24,7 +24,7 @@ class Artist(Base):
     platform = Column(String)
     created_at = Column(DateTime, default=datetime.utcnow)
 
-    images = relationship("Image", back_populates="artist")
+    images = relationship("Image", back_populates="artist", cascade="all, delete-orphan")
 
 class Image(Base):
     __tablename__ = "images"

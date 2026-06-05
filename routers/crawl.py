@@ -43,6 +43,6 @@ async def crawl_one(artist_id: int, payload=Depends(verify_token), db: AsyncSess
         raise HTTPException(status_code=404, detail="找不到此創作者")
     artist_name = artist.name
     logging.info(f"[INFO] artist_id={artist_id} found, start crawling...")
-    await crawl_artist(artist, db)
+    await crawl_artist(artist)
     logging.info(f"[INFO] crawling of artist_id={artist_id} finished!")
     return {"message": f"爬取 {artist_name} 完成"}
