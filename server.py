@@ -18,7 +18,7 @@ logger = logging.getLogger("gallery")
 async def lifespan(app: FastAPI):
     logger.info("database ")
     await init_db()
-    #asyncio.create_task(refresh_artists())
+    asyncio.create_task(refresh_artists())
     yield
 
 app = FastAPI(lifespan=lifespan)

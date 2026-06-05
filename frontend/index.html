@@ -145,8 +145,13 @@
                     style="padding:6px 12px; background:#4a9eff; border:none; border-radius:6px; color:#fff; cursor:pointer;">搜尋</button>
             <button onclick="loadImages()" 
                     style="padding:6px 12px; background:#555; border:none; border-radius:6px; color:#fff; cursor:pointer;">重置</button>
+
         </div>
-        <span id="user-info"></span>
+        <div style="display:flex; align-items:center; gap:8px;">
+            <span id="user-info"></span>
+            <button onclick="logout()"
+                    style="padding:6px 12px; background:#f66; border:none; border-radius:6px; color:#fff; cursor:pointer;">登出</button>
+        </div>
     </div>
     <div class="content">
         <div class="sidebar">
@@ -193,6 +198,7 @@
 const API = "http://127.0.0.1:8000";
 const pageSize = 20;
 let token = localStorage.getItem('token') || null
+let User = localStorage.getItem('user') || null;
 let selectedIds = new Set();
 let currentArtistId = null;
 let totalImages = 0;
@@ -200,9 +206,10 @@ let last_id = 0;
 let isLoading = false;
 
 
+
 //when window load, if token exist, show main page and load artists and images
 window.onload = async () => {
-    
+    document.getElementById("user-info").textContent = User;
     const gallery = document.getElementById("gallery");
     gallery.addEventListener("scroll", () => {
         console.log("scroll triggered, isLoading:", isLoading);
@@ -251,6 +258,7 @@ async function regist() {
 async function login() {
     const username = document.getElementById("username").value;
     const password = document.getElementById("password").value;
+    User = username.trim();
     console.log("Logging in with", username, password);
 
     //fetch in js = client.post in py
@@ -267,6 +275,7 @@ async function login() {
 
         //save token to localStorage, key = token, value = token
         localStorage.setItem('token', token);
+        localStorage.setItem('user', username);
         
         console.log("Login successful, token:", token);
         console.log("Login successful, user:", username);
@@ -289,7 +298,16 @@ async function login() {
     }
 }
 
-
+async function logout() {
+    token = null;
+    localStorage.removeItem('token');
+    document.getElementById("main-page").style.display = "none";
+    document.getElementById("login-page").style.display = "flex";
+    document.getElementById("user-info").textContent = "";
+    selectedIds.clear();
+    updateCount();
+    console.log("Logged out successfully.");
+}
 
 async function loadArtists() {
     console.log("Loading artists...");
