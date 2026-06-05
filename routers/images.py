@@ -193,6 +193,26 @@ async def get_image(image_id: int, payload=Depends(verify_token), db: AsyncSessi
 
 
 
+@router.delete("/many_images")
+async def delete_images(body: DownloadRequest, payload=Depends(verify_token), db: AsyncSession = Depends(get_db)):
+
+    logging.info(f"[INFO] checking images with ids: {body.image_ids}...")
+    result = await db.execute(select(Image).where(Image.id.in_(body.image_ids)))
+    images = result.scalars().all()
+    if not images:
+        logging.warning("[WARNING] no images found")
+        raise HTTPException(status_code=404, detail="找不到圖片")
+    
+    logging.info(f"[INFO] start deleting {len(images)} images...")
+    for image in images:
+        await db.delete(image)
+        delete_cache(f"image:{image.id}")
+    await db.commit()
+    logging.info("[INFO] all delete tasks finished!")
+    return {"message": f"刪除完成，共 {len(images)} 張"}
+
+
+
 #path: images/{image_id}
 #type: delete
 #note: /{} at bottom of others or it would cover others  @router.post("/???"")
@@ -214,4 +234,5 @@ async def delete_image(image_id: int, payload=Depends(verify_token), db: AsyncSe
     
 
     return {"message": "刪除成功"}
+
 

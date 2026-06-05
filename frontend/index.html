@@ -178,6 +178,7 @@
     <div class="bottombar">
         <span id="selected-count">已選取 0 張</span>
         <button onclick="downloadSelected()">下載選取</button>
+        <button onclick="deleteimage()" style="background:#f66;">刪除選取</button>
     </div>
 </div>
 
@@ -497,6 +498,35 @@ async function downloadSelected() {
     const data = await res.json();
     console.log("Download response:", data);
     alert(data.message);
+}
+
+async function deleteimage(){
+    if (selectedIds.size == 0){
+        console.log("No images selected for deletion.");
+        alert("請先勾選圖片");
+        return; 
+    }
+    console.log("Delete selected images, IDs:", [...selectedIds]);
+    const res = await fetch(`${API}/images/many_images/`,{
+        method: "DELETE",
+        headers: {
+            "Authorization": `Bearer ${token}`,
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ image_ids: [...selectedIds] })
+    })
+    if (res.ok){
+        console.log("Images deleted successfully, IDs:", [...selectedIds]);
+        alert("刪除成功");
+        selectedIds.clear();
+        updateCount();
+        loadImages();
+    }
+    else{
+        const data = await res.json();
+        console.log("Failed to delete images:", data);
+        alert(data.detail || "刪除失敗");
+    }
 }
 
 
