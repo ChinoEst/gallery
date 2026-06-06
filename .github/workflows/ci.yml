@@ -9,17 +9,23 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
+    - name: download code
+      uses: actions/checkout@v3
 
-    - name: 安裝套件
+    - name: dependencies cache
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
+
+    - name: install dependencies
       run: pip install -r requirements.txt && pip install pytest pytest-asyncio httpx
 
-    - name: 啟動伺服器
+    - name: server avtivate
       run: uvicorn server:app --host 0.0.0.0 --port 8000 &
-      # & 代表在背景跑
 
-    - name: 等伺服器啟動
+    - name: wait for server to start
       run: sleep 3
 
-    - name: 跑測試
+    - name: run tests
       run: pytest testAPI.py
