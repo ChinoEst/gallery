@@ -9,10 +9,17 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      
-      - name: 安裝套件
-        run: pip install -r requirements.txt
-      
-      - name: 跑測試
-        run: pytest test.py
+    - uses: actions/checkout@v3
+
+    - name: 安裝套件
+      run: pip install -r requirements.txt && pip install pytest pytest-asyncio httpx
+
+    - name: 啟動伺服器
+      run: uvicorn server:app --host 0.0.0.0 --port 8000 &
+      # & 代表在背景跑
+
+    - name: 等伺服器啟動
+      run: sleep 3
+
+    - name: 跑測試
+      run: pytest test.py
