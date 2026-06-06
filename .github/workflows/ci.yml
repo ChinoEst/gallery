@@ -22,4 +22,4 @@ jobs:
       run: sleep 3
 
     - name: 跑測試
-      run: pytest test.py
+      run: pytest pytest.py
