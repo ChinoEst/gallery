@@ -6,6 +6,7 @@ from models import Artist, Image, Tag, ImageTag
 import logging
 from database import AsyncSessionLocal
 
+
 CRAWL_SEMAPHORE = asyncio.Semaphore(3)
 
 async def get_or_create_tag(db: DBSession, tag_name: str) -> Tag:

@@ -4,12 +4,14 @@ import logging
 from sqlalchemy import event
 from sqlalchemy.engine import Engine
 import sqlite3
-
+import os
+from dotenv import load_dotenv
 
 #sqlite:dataset type
 #aiosqlite:drive version
 #save in gallery.db
-DATABASE_URL = "sqlite+aiosqlite:///./gallery.db"
+load_dotenv()
+DATABASE_URL = os.getenv("DATABASE_URL")
 
 
 #build database

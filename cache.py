@@ -1,8 +1,13 @@
 import redis
 import json
+import os
+from dotenv import load_dotenv
 
 
-r = redis.Redis(host="redis", port=6379, decode_responses=True)
+load_dotenv()
+
+
+r = redis.Redis(host=os.getenv("REDIS_HOST"), port=int(os.getenv("REDIS_PORT")), decode_responses=True)
 
 def get_cache(key: str):
     data = r.get(key)
