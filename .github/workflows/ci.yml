@@ -22,6 +22,12 @@ jobs:
       run: pip install -r requirements.txt && pip install pytest pytest-asyncio httpx
 
     - name: server avtivate
+      env:
+        SECRET_KEY: ${{ secrets.SECRET_KEY }}
+        ALGORITHM: ${{ secrets.ALGORITHM }}
+        DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        REDIS_HOST: ${{ secrets.REDIS_HOST }}
+        REDIS_PORT: ${{ secrets.REDIS_PORT }}
       run: uvicorn server:app --host 0.0.0.0 --port 8000 &
 
     - name: wait for server to start
