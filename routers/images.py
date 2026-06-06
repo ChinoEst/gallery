@@ -1,11 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
+from sqlalchemy import select, func, delete
 from sqlalchemy.orm import selectinload
 from database import get_db
 from models import Image, Tag
 from schemas import ImageResponse, DownloadRequest,ImagepageResponse
-from routers.auth import verify_token
+from routers.auth import verify_token, verify_admin
 from cache import get_cache, set_cache, delete_cache
 import aiofiles
 import httpx
@@ -193,23 +193,26 @@ async def get_image(image_id: int, payload=Depends(verify_token), db: AsyncSessi
 
 
 
-@router.delete("/many_images")
-async def delete_images(body: DownloadRequest, payload=Depends(verify_token), db: AsyncSession = Depends(get_db)):
+@router.post("/del_image")
+async def del_image(body: DownloadRequest, payload=Depends(verify_token), db: AsyncSession = Depends(get_db)):
 
-    logging.info(f"[INFO] checking images with ids: {body.image_ids}...")
-    result = await db.execute(select(Image).where(Image.id.in_(body.image_ids)))
-    images = result.scalars().all()
-    if not images:
-        logging.warning("[WARNING] no images found")
+    for image_id in body.image_ids:
+        logging.info(f"[INFO] deleting cache for image_id={image_id}...")
+        delete_cache(f"image:{image_id}")
+    try:
+        result = await db.execute(delete(Image).where(Image.id.in_(body.image_ids)))
+        await db.commit()
+    except Exception as e:
+        await db.rollback()
+        logging.error(f"[ERROR] failed to delete images with ids: {body.image_ids}: {e}")
+        raise HTTPException(status_code=500, detail="刪除圖片失敗")
+
+    if result.rowcount == 0:
+        logging.warning("[WARNING] no images found to delete")
         raise HTTPException(status_code=404, detail="找不到圖片")
     
-    logging.info(f"[INFO] start deleting {len(images)} images...")
-    for image in images:
-        await db.delete(image)
-        delete_cache(f"image:{image.id}")
-    await db.commit()
     logging.info("[INFO] all delete tasks finished!")
-    return {"message": f"刪除完成，共 {len(images)} 張"}
+    return {"message": f"刪除完成，共 {result.rowcount} 張"}
 
 
 
@@ -217,18 +220,29 @@ async def delete_images(body: DownloadRequest, payload=Depends(verify_token), db
 #type: delete
 #note: /{} at bottom of others or it would cover others  @router.post("/???"")
 @router.delete("/{image_id}")
-async def delete_image(image_id: int, payload=Depends(verify_token), db: AsyncSession = Depends(get_db)):
+async def delete_image(image_id: int, payload=Depends(verify_admin), db: AsyncSession = Depends(get_db)):
 
     logging.info(f"[INFO] checking whether image id={image_id} exists...")
-    result = await db.execute(select(Image).where(Image.id == image_id))
+
+    try:
+        result = await db.execute(select(Image).where(Image.id == image_id))
+    except Exception as e:
+        await db.rollback()
+        logging.error(f"[ERROR] failed to query image with id={image_id}: {e}")
+        raise HTTPException(status_code=500, detail="刪除圖片失敗")
     image = result.scalar_one_or_none()
     if not image:
         logging.warning(f"[WARNING] image_id={image_id} not found")
         raise HTTPException(status_code=404, detail="找不到此圖片")
     logging.info(f"[INFO] image_id={image_id} found, start deleting...")
-    await db.delete(image)
-    logging.info(f"[INFO] image_id={image_id} delete successfully!")
-    await db.commit()
+    try:
+        await db.delete(image)
+        logging.info(f"[INFO] image_id={image_id} delete successfully!")
+        await db.commit()
+    except Exception as e:
+        await db.rollback()
+        logging.error(f"[ERROR] failed to delete image with id={image_id}: {e}")
+        raise HTTPException(status_code=500, detail="刪除圖片失敗") 
 
     delete_cache(f"image:{image_id}")
     

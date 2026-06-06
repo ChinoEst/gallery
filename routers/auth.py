@@ -96,3 +96,9 @@ def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
         logging.warning("[WARNING] invalid token")
         raise HTTPException(status_code=401, detail="Token 無效")
     
+
+#verify admin
+def verify_admin(payload = Depends(verify_token)):
+    if payload["role"] != "admin":
+        logging.warning(f"[WARNING] user {payload['sub']} with role {payload['role']} tried to access admin-only resource")
+        raise HTTPException(status_code=403, detail="權限不足")

@@ -507,8 +507,8 @@ async function deleteimage(){
         return; 
     }
     console.log("Delete selected images, IDs:", [...selectedIds]);
-    const res = await fetch(`${API}/images/many_images/`,{
-        method: "DELETE",
+    const res = await fetch(`${API}/images/del_image/`,{
+        method: "POST",
         headers: {
             "Authorization": `Bearer ${token}`,
             "Content-Type": "application/json"
