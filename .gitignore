@@ -2,6 +2,7 @@
 __pycache__/
 *.pyc
 *.pyo
+*.log
 
 # 虛擬環境
 venv/
