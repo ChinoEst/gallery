@@ -1,10 +1,12 @@
-impot httpx
+import httpx
 import pytest
 
-def test1():
+
+#test_
+def test_1():
     assert 1 + 1 == 2
 
-def test2():
+def test_2():
     assert "hello" + " world" == "hello world"
 
 def test_登入():
