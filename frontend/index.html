@@ -96,6 +96,27 @@
             display: block;
         }.image-card.selected { outline: 3px solid #4a9eff; }
 
+        .image-card { position: relative;}
+
+        .downloaded-badge {
+            position: absolute;
+            top: 6px;
+            right: 6px;
+            background: rgba(74, 158, 255, 0.9);
+            color: #fff;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            pointer-events: none;
+        }
+        .downloaded-badge svg {
+            width: 14px;
+            height: 14px;
+        }
+
         /* 底部工具列 */
         .bottombar {
             background: #2a2a2a;
@@ -205,7 +226,7 @@ let currentArtistId = null;
 let totalImages = 0;
 let last_id = 0;
 let isLoading = false;
-
+const downloadIcon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>`;
 
 
 //when window load, if token exist, show main page and load artists and images
@@ -414,6 +435,7 @@ async function loadImages(artistId = null, update = false) {
             <img src="${img.thumbnail_url || img.original_url}" 
                  onerror="this.src=''"
                  loading="lazy">
+            ${img.is_downloaded ? `<div class="downloaded-badge">${downloadIcon}</div>` : ''}
         `;
         //like list.append()
         gallery.appendChild(card);
@@ -565,9 +587,9 @@ async function searchImages() {
             <img src="${img.thumbnail_url || img.original_url}" 
                  onerror="this.src=''"  //when loading fail, space it
                  loading="lazy">
-        `;
+                 ${img.is_downloaded ? `<div class="downloaded-badge">${downloadIcon}</div>` : ''}`;
         gallery.appendChild(card);
-        console.log(`Added image card for search result, image ID: ${img.id}`);
+        console.log("Added image card for search result, image ID: ${img.id}");
     });
     console.log("Finished loading search results");
 }
